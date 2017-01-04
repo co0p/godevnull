@@ -20,13 +20,16 @@ type Stats struct {
 	FileCount, UploadCount, GetCount int
 }
 
+// Config contains the configuration of the application
 type Config struct {
 	Port, Path string
 }
 
+// UploadResponse is being return upon a successful upload of a file
 type UploadResponse struct {
 	Filename, OriginalFilename string
 	Uploaded                   time.Time
+	DirectLink                 string
 }
 
 var statistics Stats
@@ -53,8 +56,21 @@ func main() {
 
 func initializeTemplate() {
 	var err error
-	templates, err = template.ParseFiles("index.html");
-	if err != nil {
+	indexTemplate := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GO /dev/null</title>
+</head>
+<body>
+<h1>GO /dev/null</h1>
+<form method="POST" enctype="multipart/form-data" action="/upload">
+    <input type="file" name="uploadfile">
+    <button type="submit">Upload</button>
+</form>
+</body>
+</html>`
+	if templates, err = template.New("index").Parse(indexTemplate); err != nil {
 		log.Fatal("Abort: Failed parsing template")
 	}
 }
@@ -70,7 +86,7 @@ func initializeConfiguration() {
 }
 
 func StaticHandler(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "index.html", nil)
+	templates.ExecuteTemplate(w, "index", nil)
 }
 
 // StatsHandler writes usage statistics as json to the response.
@@ -79,6 +95,7 @@ func StatsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(statistics)
 }
 
+// Fetch tries to find and return the file based on the filename in the url
 func Fetch(w http.ResponseWriter, r *http.Request) {
 
 	url := r.URL.Path
@@ -108,6 +125,7 @@ func Fetch(w http.ResponseWriter, r *http.Request) {
 	statistics.GetCount++
 }
 
+// Upload handles the receiving and storing of the file the user posted
 func Upload(w http.ResponseWriter, r *http.Request) {
 	file, handler, err := r.FormFile("uploadfile")
 
@@ -137,11 +155,13 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 
 	io.Copy(f, file)
 	filesMap[directoryName] = handler.Filename
+	link := "http://" + r.Host + "/fetch/" + directoryName
 
 	response, _ := json.Marshal(UploadResponse{
 		Filename:directoryName,
 		OriginalFilename: handler.Filename,
 		Uploaded:time.Now(),
+		DirectLink: link,
 	})
 	statistics.UploadCount++
 
@@ -149,6 +169,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
+// initializeFileMap bootstraps the internal data structure that holds references to uploaded files
 func initializeFileMap() {
 
 	filesMap = make(map[string]string)
