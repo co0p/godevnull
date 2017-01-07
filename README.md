@@ -114,3 +114,10 @@ Now connect to the running container via name and execute the bash:
 Yeah, now you are inside the container. Go to /root/ and inspect the content
 
 ** success: inception baby! **
+
+
+Further ideas
+--------------
+
+ * put a nginx load balancer in front of multiple instances or use a ha-proxy
+ * deploy to a cloud provider
