@@ -30,16 +30,24 @@ Create Dockerfile
 -----------------
 
 The Dockerfile tells docker how to build / provision a docker container
- * FROM - Which base image should the container use?
- * ADD - Any files to copy?
- * ENTRYPOINT - Which executable to run?
- 
+
+    FROM google/debian:jessie
+    MAINTAINER Julian Godesa <julian.godesa@googlemail.com>
+    ADD goDevNull goDevNull
+    ENTRYPOINT "goDevNull"
+
+* FROM - Which base image should the container use?
+* ADD - Any files to copy?
+* ENTRYPOINT - Which executable to run?
+
+And now build and run the container: 
+
     go build
     docker build . # remember the id
     docker run <id>
 
 
-** stack trace .... **
+** OOOPPPS stack trace .... **
  
     env GOOS=linux go build # <- we are running the app under linux!
     docker build . # remember the id
@@ -65,7 +73,7 @@ Now we can access the upload service under port 80
 Volumes
 --------
 
-So far our uploaded data is being lost on every restart... 
+So far our uploaded data is being lost on every restart. Let's attach a local directory as a volume inside the container
 
     docker build -t=go-dev-null .
     docker run -p 80:8080 -v `echo $(pwd)`/tmp:/tmp go-dev-null
@@ -76,9 +84,33 @@ Now restart the application, upload a file, stop the container and restart. The 
 
 ** success ! **
 
+Login to container
+------------------
 
-Container size
---------------
+Currently we use entrypoint in the Dockerfile. This starts the goDevNull binary right away and the
+output is directly send to the std output of the terminal. 
 
-To see all local available images run ```docker images```. On my machine the image is about 100mb big.
+ adjust the Dockerfile to put the binary under /root
+ 
+    FROM google/debian:jessie
+    MAINTAINER Julian Godesa <julian.godesa@googlemail.com>
+    ADD goDevNull /root/goDevNull
+    WORKDIR "/root" # <---- this is new !!
+    ENTRYPOINT "/root/goDevNull"
+ 
+ * build the container ```docker build -t=go-dev-null .```
+ * run the container image ```docker run -p 80:8080 -v `echo $(pwd)`/tmp:/root/tmp go-dev-null```
+ 
+See what containers are running: 
 
+    docker ps
+    
+Now connect to the running container via name and execute the bash:
+
+    docker exec -i -it <name> /bin/bash
+
+```-it``` is short hand for interactive (-i) and getting a new tty (-t)
+
+Yeah, now you are inside the container. Go to /root/ and inspect the content
+
+** success: inception baby! **

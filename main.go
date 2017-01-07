@@ -90,7 +90,13 @@ func initializeStatistics() {
 }
 
 func initializeConfiguration() {
-	configuration.Path = "tmp"
+
+	cwd, err := os.Getwd();
+	if err != nil {
+		configuration.Path = "tmp"
+	}
+	configuration.Path = cwd + "/tmp"
+
 	configuration.Port = "8080"
 }
 
