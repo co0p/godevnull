@@ -18,6 +18,7 @@ import (
 type Stats struct {
 	StartupTime                      time.Time
 	FileCount, UploadCount, GetCount int
+	Hostname                         string
 }
 
 // Config contains the configuration of the application
@@ -76,8 +77,16 @@ func initializeTemplate() {
 }
 
 func initializeStatistics() {
-	statistics = Stats{StartupTime:time.Now(),
-		FileCount:len(filesMap)}
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+
+	statistics = Stats{
+		StartupTime:time.Now(),
+		FileCount:len(filesMap),
+		Hostname: hostname,
+	}
 }
 
 func initializeConfiguration() {
